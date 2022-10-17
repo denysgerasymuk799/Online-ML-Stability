@@ -3,19 +3,20 @@ from river.datasets import base
 
 
 class BankDataset(base.FileDataset):
-    def __init__(self):
+    def __init__(self, directory="../datasets", filename="bank-additional-full.csv", delimiter=';'):
         super().__init__(
-            filename="bank-additional-full.csv",
-            directory="../datasets",
+            filename=filename,
+            directory=directory,
             n_features=20,
             task=base.BINARY_CLF,
         )
+        self.delimiter = delimiter
 
     def __iter__(self):
         return stream.iter_csv(
             self.path,
             target="y",
-            delimiter=';',
+            delimiter=self.delimiter,
             converters={
                 "age": int,
                 "duration": int,
