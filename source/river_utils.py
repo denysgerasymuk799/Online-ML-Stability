@@ -12,13 +12,7 @@ def ddict2dict(d):
     return dict(d)
 
 
-def evaluate_binary_model(dataset, model, target_mapping=None, measure_every=1000):
-    if target_mapping is None:
-        target_mapping = {
-            'yes': 1,
-            'no': 0
-        }
-
+def evaluate_binary_model(dataset, model, measure_every=1000):
     cm = metrics.ConfusionMatrix()
     acc_metric = metrics.Accuracy()
     # Weighted-average F1 score.
@@ -29,8 +23,6 @@ def evaluate_binary_model(dataset, model, target_mapping=None, measure_every=100
     acc_metrics = []
     f1_metrics = []
     for idx, (x, y_true) in enumerate(dataset):
-        y_true = target_mapping[y_true]
-
         # Obtain the prior prediction and update the model in one go
         y_pred = model.predict_one(x)
 
@@ -48,6 +40,8 @@ def evaluate_binary_model(dataset, model, target_mapping=None, measure_every=100
 
     print('\n\n\nDebug pipeline:\n' + model.debug_one(x))
 
+    sns.set(rc={'figure.figsize':(15, 5)})
+
     # Plot the Accuracy results
     fig, ax = plt.subplots(figsize=(10, 6))
     ax.grid(alpha=0.75)
@@ -64,6 +58,7 @@ def evaluate_binary_model(dataset, model, target_mapping=None, measure_every=100
     fig, ax = plt.subplots(figsize=(10, 8))
     print('\n\nConfusion matrix:\n', cm)
     cm_dict = ddict2dict(cm.data)
+    print('\nConfusion matrix dict:\n', cm_dict)
     ax = sns.heatmap(pd.DataFrame(cm_dict).T, annot=True, fmt=".0f")
     ax.set(xlabel="Predicted label", ylabel="True label")
     plt.show()
