@@ -19,7 +19,7 @@ class FolktablesDataset(base.FileDataset):
             delimiter=self.delimiter,
             converters={
                 "AGEP": int,
-                "SCHL": str,
+                "SCHL": int,
                 "MAR": str,
                 "RELP": str,
                 "DIS": str,

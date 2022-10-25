@@ -12,7 +12,7 @@ def ddict2dict(d):
     return dict(d)
 
 
-def evaluate_binary_model(dataset, model, measure_every=1000):
+def evaluate_binary_model(dataset, model, measure_every=1000, dataset_limit=None):
     cm = metrics.ConfusionMatrix()
     acc_metric = metrics.Accuracy()
     # Weighted-average F1 score.
@@ -22,6 +22,9 @@ def evaluate_binary_model(dataset, model, measure_every=1000):
 
     acc_metrics = []
     f1_metrics = []
+    # Shrink the dataset if needed
+    if dataset_limit is not None:
+        dataset = dataset[:dataset_limit]
     for idx, (x, y_true) in enumerate(dataset):
         # Obtain the prior prediction and update the model in one go
         y_pred = model.predict_one(x)
@@ -54,7 +57,7 @@ def evaluate_binary_model(dataset, model, measure_every=1000):
     ax.plot(f1_metrics, lw=3, color='#e74c3c', alpha=0.8, label='F1')
     ax.set_title(f1_metric)
 
-    # Plot the F1 results
+    # Plot a confusion matrix
     fig, ax = plt.subplots(figsize=(10, 8))
     print('\n\nConfusion matrix:\n', cm)
     cm_dict = ddict2dict(cm.data)
