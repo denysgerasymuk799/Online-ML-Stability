@@ -22,9 +22,6 @@ def evaluate_binary_model(dataset, model, measure_every=1000, dataset_limit=None
 
     acc_metrics = []
     f1_metrics = []
-    # Shrink the dataset if needed
-    if dataset_limit is not None:
-        dataset = dataset[:dataset_limit]
     for idx, (x, y_true) in enumerate(dataset):
         # Obtain the prior prediction and update the model in one go
         y_pred = model.predict_one(x)
@@ -38,6 +35,10 @@ def evaluate_binary_model(dataset, model, measure_every=1000, dataset_limit=None
             acc_metrics.append(acc_metric.get())
             f1_metrics.append(f1_metric.get())
             print(f'Index: {idx + 1}; {acc_metric}; {f1_metric}')
+
+        # Shrink the dataset if needed
+        if dataset_limit is not None and (idx + 1) == dataset_limit:
+            break
 
         model = model.learn_one(x=x, y=y_true)
 
