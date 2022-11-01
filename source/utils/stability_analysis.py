@@ -42,6 +42,7 @@ def get_per_sample_accuracy(y_test, results):
     per_sample_predictions = {}
     label_stability = []
     per_sample_accuracy = []
+    acc = None
     for sample in range(len(y_test)):
         per_sample_predictions[sample] =  [round(x) for x in results[sample].values]
         # per_sample_predictions[sample] =  [int(x<0.5) for x in results[sample].values]
@@ -52,7 +53,8 @@ def get_per_sample_accuracy(y_test, results):
             acc = np.mean(per_sample_predictions[sample])
         elif y_test[sample] == 0:
             acc = 1 - np.mean(per_sample_predictions[sample])
-        per_sample_accuracy.append(acc)
+        if acc is not None:
+            per_sample_accuracy.append(acc)
 
     return per_sample_accuracy, label_stability
 

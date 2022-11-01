@@ -1,7 +1,8 @@
 import numpy as np
 
 from copy import deepcopy
-from river.base.ensemble import WrapperEnsemble
+from river import utils
+from random import Random
 
 from source.config import SEED
 from source.utils.EDA_utils import plot_generic
@@ -23,6 +24,8 @@ class StabilityAnalyzer:
         self.n_estimators = n_estimators
         self.models_lst = [deepcopy(base_model) for _ in range(n_estimators)]
 
+        self.w = 6
+        self._rng = Random(SEED)
         self.n_sample = 0
         self.metric_memory_length = metric_memory_length
         self.y_true_lst = []
@@ -91,11 +94,31 @@ class StabilityAnalyzer:
             #     print("Train acc:", model.score(X_sample, y_sample))
             #     print("Val acc:", model.score(self.X_test_imputed, self.y_test))
 
+    def UQ_by_online_bagging_v2(self, x, y_true, verbose=True):
+        """
+        Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
+        """
+        for idx in range(self.n_estimators):
+            classifier = self.models_lst[idx]
+            y_pred = classifier.predict_one(x)
+            # TODO: not sure if it learns here
+            # print(f'Before training\nx={x}\ny={y_true}')
+            k = self._leveraging_bag(x=x, y=y_true)
+            for _ in range(k):
+                self.models_lst[idx] = classifier.learn_one(x=x, y=y_true)
+
+            if y_pred is not None:
+                self._rolling_update(self.model_predictions[idx], y_pred)
+
     def _rolling_update(self, lst, item):
         if self.n_sample <= self.metric_memory_length:
             lst.append(item)
         else:
             lst[self.n_sample % self.metric_memory_length] = item
+
+    def _leveraging_bag(self, **kwargs):
+        # Leveraging bagging
+        return utils.random.poisson(self.w, self._rng)
 
     def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability):
         self.accuracy = accuracy
