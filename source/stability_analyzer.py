@@ -48,7 +48,7 @@ class StabilityAnalyzer:
         """
 
         # Quantify uncertainty for the bet model
-        self.UQ_by_online_bagging(x, y_true, verbose=False)
+        self.UQ_by_online_bagging_v2(x, y_true, verbose=False)
 
         if self.skip_first:
             self.skip_first = False
