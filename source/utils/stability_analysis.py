@@ -22,11 +22,11 @@ def count_prediction_stats(y_test, uq_results):
     results = pd.DataFrame(uq_results).transpose()
     means = results.mean().values
     stds = results.std().values
-
-    print('results: ', results)
     iqr = sp.stats.iqr(results, axis=0)
 
-    y_preds = np.array([int(x<0.5) for x in results.mean().values])
+    # y_preds = np.array([int(x<0.5) for x in results.mean().values])
+    y_preds = np.array([round(x) for x in results.mean().values])
+    # print(f'y_preds: {y_preds}\ny_test: {y_test}\n')
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))
 
     return y_preds, results, means, stds, iqr, accuracy
@@ -43,7 +43,8 @@ def get_per_sample_accuracy(y_test, results):
     label_stability = []
     per_sample_accuracy = []
     for sample in range(len(y_test)):
-        per_sample_predictions[sample] =  [int(x<0.5) for x in results[sample].values]
+        per_sample_predictions[sample] =  [round(x) for x in results[sample].values]
+        # per_sample_predictions[sample] =  [int(x<0.5) for x in results[sample].values]
         # TODO: is it correct to measure label stability in such a way
         label_stability.append(compute_label_stability(per_sample_predictions[sample]))
 

@@ -1,5 +1,6 @@
 import numpy as np
 
+from copy import deepcopy
 from river.base.ensemble import WrapperEnsemble
 
 from source.config import SEED
@@ -7,7 +8,7 @@ from source.utils.EDA_utils import plot_generic
 from source.utils.stability_analysis import count_prediction_stats, get_per_sample_accuracy
 
 
-class StabilityAnalyzer(WrapperEnsemble):
+class StabilityAnalyzer:
     def __init__(self, base_model, n_estimators=10, metric_memory_length=100):
         """
         :param X_data_tpl: a tuple of X_train_features and X_test_features; used to fit and test evaluation_model
@@ -18,12 +19,15 @@ class StabilityAnalyzer(WrapperEnsemble):
         :param null_scenario_name: a name of null simulation method; just used to name a result .pkl file
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
-        super().__init__(base_model, n_estimators, SEED)
+        self.base_model = base_model
+        self.n_estimators = n_estimators
+        self.models_lst = [deepcopy(base_model) for _ in range(n_estimators)]
 
         self.n_sample = 0
         self.metric_memory_length = metric_memory_length
         self.y_true_lst = []
-        self.model_predictions = {idx: [] for idx in range(self.n_models)}
+        self.model_predictions = {idx: [] for idx in range(self.n_estimators)}
+        self.skip_first = True
 
         # Metrics
         self.accuracy = None
@@ -39,13 +43,16 @@ class StabilityAnalyzer(WrapperEnsemble):
 
         :param make_plots: bool, if display plots for analysis
         """
-        self.n_sample += 1
-        self._rolling_update(self.y_true_lst, y_true)
 
         # Quantify uncertainty for the bet model
         self.UQ_by_online_bagging(x, y_true, verbose=False)
-        if self.n_sample == 1:
+
+        if self.skip_first:
+            self.skip_first = False
             return
+        else:
+            self.n_sample += 1
+            self._rolling_update(self.y_true_lst, y_true)
 
         # Count metrics
         y_preds, results, means, stds, iqr, accuracy = count_prediction_stats(self.y_true_lst,
@@ -61,21 +68,23 @@ class StabilityAnalyzer(WrapperEnsemble):
             plot_generic(per_sample_accuracy, iqr, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
 
         self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability)
+        if self.n_sample <= 5:
+            print(f'y_true_lst: {self.y_true_lst}\nmodel_predictions: {self.model_predictions}\n\n')
+            self.print_metrics()
 
     def UQ_by_online_bagging(self, x, y_true, verbose=True):
         """
         Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
         """
-        for idx, classifier in enumerate(self):
+        for idx in range(self.n_estimators):
+            classifier = self.models_lst[idx]
             y_pred = classifier.predict_one(x)
-            print(f'y_true: {y_true}, y_pred: {y_pred}')
-            if y_pred is None:
-                continue
-
-            self._rolling_update(self.model_predictions[idx], y_pred)
-
             # TODO: not sure if it learns here
-            classifier.learn_one(x=x, y=y_true)
+            # print(f'Before training\nx={x}\ny={y_true}')
+            self.models_lst[idx] = classifier.learn_one(x=x, y=y_true)
+
+            if y_pred is not None:
+                self._rolling_update(self.model_predictions[idx], y_pred)
 
             # if verbose:
             #     print(idx)
