@@ -34,6 +34,7 @@ class StabilityAnalyzer:
         self.iqr = None
         self.per_sample_accuracy = None
         self.label_stability = None
+        self.jitter = None
 
         # Metrics history
         self.accuracy_lst = []
@@ -42,6 +43,7 @@ class StabilityAnalyzer:
         self.iqr_lst = []
         self.per_sample_accuracy_lst = []
         self.label_stability_lst = []
+        self.jitter_lst = []
 
     @staticmethod
     def _batch_predict(classifier, sample_batch):
@@ -66,6 +68,7 @@ class StabilityAnalyzer:
         self.UQ_by_online_bagging(verbose=False)
         self.print_metrics()
 
+        # Clean values related to the batch
         self.sample_batch = []
         self.y_true_lst = []
 
@@ -79,10 +82,10 @@ class StabilityAnalyzer:
             models_predictions[idx] = StabilityAnalyzer._batch_predict(classifier, self.sample_batch)
 
         # Count metrics
-        y_preds, results, means, stds, iqr, accuracy = count_prediction_stats(self.y_true_lst,
-                                                                              uq_results=models_predictions)
+        y_preds, results, means, stds, iqr, accuracy, jitter = count_prediction_stats(self.y_true_lst,
+                                                                                      uq_results=models_predictions)
         per_sample_accuracy, label_stability = get_per_sample_accuracy(self.y_true_lst, results)
-        self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability)
+        self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter)
 
         # Sync with an original model and apply online bagging for future stability measurements
 
@@ -108,13 +111,14 @@ class StabilityAnalyzer:
         # Leveraging bagging
         return utils.random.poisson(self.w, self._rng)
 
-    def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability):
+    def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter):
         self.accuracy = accuracy
         self.mean = np.mean(means)
         self.std = np.mean(stds)
         self.iqr = np.mean(iqr)
         self.per_sample_accuracy = np.mean(per_sample_accuracy)
         self.label_stability = np.mean(label_stability)
+        self.jitter = jitter
 
         # Save metrics history
         self.accuracy_lst.append(self.accuracy)
@@ -123,6 +127,7 @@ class StabilityAnalyzer:
         self.iqr_lst.append(self.iqr)
         self.per_sample_accuracy_lst.append(self.per_sample_accuracy)
         self.label_stability_lst.append(self.label_stability)
+        self.jitter_lst.append(self.jitter)
 
     def print_metrics(self):
         print(f'Sample number: {self.n_sample}\n'
@@ -131,17 +136,17 @@ class StabilityAnalyzer:
               f'Std: {self.std}\n'
               f'IQR: {self.iqr}\n'
               f'Per sample accuracy: {self.per_sample_accuracy}\n'
-              f'Label stability: {self.label_stability}\n\n')
+              f'Label stability: {self.label_stability}\n'
+              f'Jitter: {self.jitter}\n\n')
 
     def plot_metrics_history(self):
         x_ticks = [(n_metric + 1) * self.batch_size for n_metric in range(len(self.label_stability_lst))]
-
         sns.set(rc={'figure.figsize':(15, 5)})
 
         # Plot the Accuracy history
         for label, metrics_lst in [('Accuracy', self.accuracy_lst), ('Mean', self.mean_lst), ('Std', self.std_lst),
                                    ('IQR', self.iqr_lst), ('Per sample accuracy', self.per_sample_accuracy_lst),
-                                   ('Label stability', self.label_stability_lst)]:
+                                   ('Label stability', self.label_stability_lst), ('Jitter', self.jitter_lst)]:
             fig, ax = plt.subplots(figsize=(10, 6))
             ax.grid(alpha=0.75)
             ax.plot(x_ticks, metrics_lst, lw=3, color='blue', alpha=0.8, label=label)
