@@ -1,16 +1,17 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from river import utils
 from random import Random
 
 from source.config import SEED
-from source.utils.EDA_utils import plot_generic
 from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
 
 
 class StabilityAnalyzer:
-    def __init__(self, base_model, n_estimators=10, metric_memory_length=100):
+    def __init__(self, base_model, n_estimators=10, batch_size=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
@@ -21,7 +22,7 @@ class StabilityAnalyzer:
         self.w = 6
         self._rng = Random(SEED)
         self.n_sample = 0
-        self.metric_memory_length = metric_memory_length
+        self.batch_size = batch_size
         self.y_true_lst = []
         # self.model_predictions = {idx: [] for idx in range(self.n_estimators)}
         self.sample_batch = []
@@ -33,6 +34,14 @@ class StabilityAnalyzer:
         self.iqr = None
         self.per_sample_accuracy = None
         self.label_stability = None
+
+        # Metrics history
+        self.accuracy_lst = []
+        self.mean_lst = []
+        self.std_lst = []
+        self.iqr_lst = []
+        self.per_sample_accuracy_lst = []
+        self.label_stability_lst = []
 
     @staticmethod
     def _batch_predict(classifier, sample_batch):
@@ -48,12 +57,10 @@ class StabilityAnalyzer:
         # TODO: add a sliding window for rapid-updates or rolling update of a sample batch
 
         self.n_sample += 1
-        if self.n_sample % self.metric_memory_length != 0:
+        if self.n_sample % self.batch_size != 0:
             self.sample_batch.append(x)
             self.y_true_lst.append(y_true)
             return
-
-        print('n_sample: ', self.n_sample)
 
         # Quantify uncertainty for the bet model
         self.UQ_by_online_bagging(verbose=False)
@@ -61,14 +68,6 @@ class StabilityAnalyzer:
 
         self.sample_batch = []
         self.y_true_lst = []
-
-        # # Display plots if needed
-        # if make_plots:
-        #     plot_generic(means, stds, "Mean of probability", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Probability mean vs Standard deviation")
-        #     plot_generic(stds, label_stability, "Standard deviation", "Label stability", x_lim=0.5, y_lim=1.01, plot_title="Standard deviation vs Label stability")
-        #     plot_generic(means, label_stability, "Mean", "Label stability", x_lim=1.01, y_lim=1.01, plot_title="Mean vs Label stability")
-        #     plot_generic(per_sample_accuracy, stds, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
-        #     plot_generic(per_sample_accuracy, iqr, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
 
     def UQ_by_online_bagging(self, verbose=True):
         """
@@ -86,7 +85,10 @@ class StabilityAnalyzer:
         self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability)
 
         # Sync with an original model and apply online bagging for future stability measurements
+
+        # TODO: add sync with true model
         # self._sync_with_true_model(true_model)
+
         self._models_fit_by_online_bagging()
 
     def _models_fit_by_online_bagging(self):
@@ -102,12 +104,6 @@ class StabilityAnalyzer:
     def _sync_with_true_model(self, true_model):
         self.models_lst = [deepcopy(true_model) for _ in range(self.n_estimators)]
 
-    def _rolling_update(self, lst, item):
-        if self.n_sample <= self.metric_memory_length:
-            lst.append(item)
-        else:
-            lst[self.n_sample % self.metric_memory_length] = item
-
     def _leveraging_bag(self, **kwargs):
         # Leveraging bagging
         return utils.random.poisson(self.w, self._rng)
@@ -120,10 +116,37 @@ class StabilityAnalyzer:
         self.per_sample_accuracy = np.mean(per_sample_accuracy)
         self.label_stability = np.mean(label_stability)
 
+        # Save metrics history
+        self.accuracy_lst.append(self.accuracy)
+        self.mean_lst.append(self.mean)
+        self.std_lst.append(self.std)
+        self.iqr_lst.append(self.iqr)
+        self.per_sample_accuracy_lst.append(self.per_sample_accuracy)
+        self.label_stability_lst.append(self.label_stability)
+
     def print_metrics(self):
-        print(f'Accuracy: {self.accuracy}\n'
+        print(f'Sample number: {self.n_sample}\n'
+              f'Accuracy: {self.accuracy}\n'
               f'Mean: {self.mean}\n'
               f'Std: {self.std}\n'
               f'IQR: {self.iqr}\n'
               f'Per sample accuracy: {self.per_sample_accuracy}\n'
               f'Label stability: {self.label_stability}\n\n')
+
+    def plot_metrics_history(self):
+        x_ticks = [(n_metric + 1) * self.batch_size for n_metric in range(len(self.label_stability_lst))]
+
+        sns.set(rc={'figure.figsize':(15, 5)})
+
+        # Plot the Accuracy history
+        for label, metrics_lst in [('Accuracy', self.accuracy_lst), ('Mean', self.mean_lst), ('Std', self.std_lst),
+                                   ('IQR', self.iqr_lst), ('Per sample accuracy', self.per_sample_accuracy_lst),
+                                   ('Label stability', self.label_stability_lst)]:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.grid(alpha=0.75)
+            ax.plot(x_ticks, metrics_lst, lw=3, color='blue', alpha=0.8, label=label)
+            ax.set_title(f'{label} {round(metrics_lst[-1], 4)}')
+            plt.xlabel("Sample number")
+            plt.ylabel(label)
+
+        plt.show()
