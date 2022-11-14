@@ -11,7 +11,7 @@ from source.utils.stability_utils import count_prediction_stats, get_per_sample_
 
 
 class StabilityAnalyzer:
-    def __init__(self, base_model, n_estimators=10, batch_size=100):
+    def __init__(self, base_model, n_estimators=100, batch_size=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """

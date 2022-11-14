@@ -44,6 +44,8 @@ def count_prediction_stats(y_test, uq_results):
     # y_preds = np.array([int(x<0.5) for x in results.mean().values])
     y_preds = np.array([round(x) for x in results.mean().values])
     # print(f'y_preds: {y_preds}\ny_test: {y_test}\n')
+
+    # TODO: remove accuracy
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))
 
     return y_preds, results, means, stds, iqr, accuracy, jitter
