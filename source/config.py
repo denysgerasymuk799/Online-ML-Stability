@@ -1,10 +1,20 @@
+import logging
+
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
+
+from source.custom_logger import CustomHandler
 
 
 SEED = 42
 TEST_SIZE = 0.2
+VALIDATION_SIZE = TEST_SIZE
 BOOTSTRAP_FRACTION = 0.6
+
+logger = logging.getLogger('root')
+logger.setLevel('INFO')
+logging.disable(logging.DEBUG)
+logger.addHandler(CustomHandler())
 
 FOLKTABLES_COLUMN_TO_TYPE = {
     "categorical": ['SCHL', 'MAR', 'MIL', 'ESP', 'MIG', 'DREM', 'NATIVITY', 'DIS', 'DEAR', 'DEYE', 'SEX', 'RAC1P', 'RELP', 'CIT', 'ANC'],

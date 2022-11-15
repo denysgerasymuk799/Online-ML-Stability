@@ -78,6 +78,15 @@ def get_per_sample_accuracy(y_test, results):
     return per_sample_accuracy, label_stability
 
 
+def generate_bootstrap(df, boostrap_size, with_replacement=True):
+    bootstrap_index = np.random.choice(df.shape[0], size=boostrap_size, replace=with_replacement)
+    bootstrap_features = pd.DataFrame(df).iloc[bootstrap_index]
+    if len(bootstrap_features) == boostrap_size:
+        return bootstrap_features
+    else:
+        raise ValueError('Bootstrap samples are not of the size requested')
+
+
 def display_uncertainty_plot(results, x_metric, y_metric, x_lim):
     fig, ax = plt.subplots()
     set_size(15, 8, ax)
