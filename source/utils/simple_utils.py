@@ -1,3 +1,4 @@
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from source.config import FOLKTABLES_COLUMN_TO_TYPE
@@ -20,3 +21,14 @@ def set_size(w,h, ax=None):
     figw = float(w)/(r-l)
     figh = float(h)/(t-b)
     ax.figure.set_size_inches(figw, figh)
+
+
+def make_feature_df(data, categorical_columns, numerical_columns):
+    """
+    Return a dataset made by one-hot encoding for categorical columns and concatenate with numerical columns
+    """
+    feature_df = pd.get_dummies(data[categorical_columns], columns=categorical_columns)
+    for col in numerical_columns:
+        if col in data.columns:
+            feature_df[col] = data[col]
+    return feature_df
