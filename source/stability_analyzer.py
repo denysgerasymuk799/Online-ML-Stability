@@ -4,28 +4,23 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from river import utils
-from random import Random
 
-from source.config import SEED
+from source.config import BOOTSTRAP_FRACTION
 from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
 
 
 class StabilityAnalyzer:
-    def __init__(self, base_model, n_estimators=100, batch_size=100):
+    def __init__(self, base_model, train_size, test_size, n_estimators=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
+        self.n_sample = 0
         self.base_model = base_model
         self.n_estimators = n_estimators
         self.models_lst = [deepcopy(base_model) for _ in range(n_estimators)]
 
-        self.w = 6
-        self._rng = Random(SEED)
-        self.n_sample = 0
-        self.batch_size = batch_size
-        self.y_true_lst = []
-        # self.model_predictions = {idx: [] for idx in range(self.n_estimators)}
-        self.sample_batch = []
+        self.train_size = train_size
+        self.test_size = test_size
 
         # Metrics
         self.accuracy = None
@@ -36,36 +31,23 @@ class StabilityAnalyzer:
         self.label_stability = None
         self.jitter = None
 
-        # Metrics history
-        self.accuracy_lst = []
-        self.mean_lst = []
-        self.std_lst = []
-        self.iqr_lst = []
-        self.per_sample_accuracy_lst = []
-        self.label_stability_lst = []
-        self.jitter_lst = []
-
     @staticmethod
     def _batch_predict(classifier, sample_batch):
         return [classifier.predict_one(x) for x in sample_batch]
 
-    def measure_stability_metrics(self, x, y_true, make_plots=False):
+    def measure_stability_metrics(self, dataset, make_plots=False):
         """
         Measure metrics for the evaluation model. Display plots for analysis if needed. Save results to a .pkl file
 
         :param make_plots: bool, if display plots for analysis
         """
-
-        # TODO: add a sliding window for rapid-updates or rolling update of a sample batch
-
         self.n_sample += 1
-        if self.n_sample % self.batch_size != 0:
-            self.sample_batch.append(x)
-            self.y_true_lst.append(y_true)
-            return
+
+        # For computing fairness-related metrics
+        boostrap_size = int(BOOTSTRAP_FRACTION * self.X_train_imputed.shape[0])
 
         # Quantify uncertainty for the bet model
-        self.UQ_by_online_bagging(verbose=False)
+        self.UQ_by_online_bagging(dataset, verbose=False)
         self.print_metrics()
 
         # Clean values related to the batch

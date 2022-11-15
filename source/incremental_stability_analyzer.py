@@ -1,16 +1,17 @@
 import numpy as np
+import seaborn as sns
+import matplotlib.pyplot as plt
 
 from copy import deepcopy
 from river import utils
 from random import Random
 
 from source.config import SEED
-from source.utils.EDA_utils import plot_generic
 from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
 
 
 class StabilityAnalyzer:
-    def __init__(self, base_model, n_estimators=10, metric_memory_length=100):
+    def __init__(self, base_model, n_estimators=100, batch_size=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
@@ -21,10 +22,10 @@ class StabilityAnalyzer:
         self.w = 6
         self._rng = Random(SEED)
         self.n_sample = 0
-        self.metric_memory_length = metric_memory_length
+        self.batch_size = batch_size
         self.y_true_lst = []
-        self.model_predictions = {idx: [] for idx in range(self.n_estimators)}
-        self.skip_first = True
+        # self.model_predictions = {idx: [] for idx in range(self.n_estimators)}
+        self.sample_batch = []
 
         # Metrics
         self.accuracy = None
@@ -33,99 +34,124 @@ class StabilityAnalyzer:
         self.iqr = None
         self.per_sample_accuracy = None
         self.label_stability = None
+        self.jitter = None
 
-    def measure_metrics(self, x, y_true, make_plots=False):
+        # Metrics history
+        self.accuracy_lst = []
+        self.mean_lst = []
+        self.std_lst = []
+        self.iqr_lst = []
+        self.per_sample_accuracy_lst = []
+        self.label_stability_lst = []
+        self.jitter_lst = []
+
+    @staticmethod
+    def _batch_predict(classifier, sample_batch):
+        return [classifier.predict_one(x) for x in sample_batch]
+
+    def measure_stability_metrics(self, x, y_true, make_plots=False):
         """
         Measure metrics for the evaluation model. Display plots for analysis if needed. Save results to a .pkl file
 
         :param make_plots: bool, if display plots for analysis
         """
 
-        # Quantify uncertainty for the bet model
-        self.UQ_by_online_bagging_v2(x, y_true, verbose=False)
+        # TODO: add a sliding window for rapid-updates or rolling update of a sample batch
 
-        if self.skip_first:
-            self.skip_first = False
+        self.n_sample += 1
+        if self.n_sample % self.batch_size != 0:
+            self.sample_batch.append(x)
+            self.y_true_lst.append(y_true)
             return
-        else:
-            self.n_sample += 1
-            self._rolling_update(self.y_true_lst, y_true)
+
+        # Quantify uncertainty for the bet model
+        self.UQ_by_online_bagging(verbose=False)
+        self.print_metrics()
+
+        # Clean values related to the batch
+        self.sample_batch = []
+        self.y_true_lst = []
+
+    def UQ_by_online_bagging(self, verbose=True):
+        """
+        Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
+        """
+        models_predictions = {idx: [] for idx in range(self.n_estimators)}
+        for idx in range(self.n_estimators):
+            classifier = self.models_lst[idx]
+            models_predictions[idx] = StabilityAnalyzer._batch_predict(classifier, self.sample_batch)
 
         # Count metrics
-        y_preds, results, means, stds, iqr, accuracy = count_prediction_stats(self.y_true_lst,
-                                                                              uq_results=self.model_predictions)
+        y_preds, results, means, stds, iqr, accuracy, jitter = count_prediction_stats(self.y_true_lst,
+                                                                                      uq_results=models_predictions)
         per_sample_accuracy, label_stability = get_per_sample_accuracy(self.y_true_lst, results)
+        self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter)
 
-        # Display plots if needed
-        if make_plots:
-            plot_generic(means, stds, "Mean of probability", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Probability mean vs Standard deviation")
-            plot_generic(stds, label_stability, "Standard deviation", "Label stability", x_lim=0.5, y_lim=1.01, plot_title="Standard deviation vs Label stability")
-            plot_generic(means, label_stability, "Mean", "Label stability", x_lim=1.01, y_lim=1.01, plot_title="Mean vs Label stability")
-            plot_generic(per_sample_accuracy, stds, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
-            plot_generic(per_sample_accuracy, iqr, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
+        # Sync with an original model and apply online bagging for future stability measurements
 
-        self.__update_metrics(accuracy, means, stds, iqr, per_sample_accuracy, label_stability)
-        if self.n_sample <= 5:
-            print(f'y_true_lst: {self.y_true_lst}\nmodel_predictions: {self.model_predictions}\n\n')
-            self.print_metrics()
+        # TODO: add sync with true model
+        # self._sync_with_true_model(true_model)
 
-    def UQ_by_online_bagging(self, x, y_true, verbose=True):
-        """
-        Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
-        """
-        for idx in range(self.n_estimators):
-            classifier = self.models_lst[idx]
-            y_pred = classifier.predict_one(x)
-            # TODO: not sure if it learns here
-            # print(f'Before training\nx={x}\ny={y_true}')
-            self.models_lst[idx] = classifier.learn_one(x=x, y=y_true)
+        self._models_fit_by_online_bagging()
 
-            if y_pred is not None:
-                self._rolling_update(self.model_predictions[idx], y_pred)
+    def _models_fit_by_online_bagging(self):
+        for (x, y_true) in zip(self.sample_batch, self.y_true_lst):
+            for idx in range(self.n_estimators):
+                classifier = self.models_lst[idx]
+                # TODO: not sure if it learns here
+                # print(f'Before training\nx={x}\ny={y_true}')
+                k = self._leveraging_bag(x=x, y=y_true)
+                for _ in range(k):
+                    self.models_lst[idx] = classifier.learn_one(x=x, y=y_true)
 
-            # if verbose:
-            #     print(idx)
-            #     print("Train acc:", model.score(X_sample, y_sample))
-            #     print("Val acc:", model.score(self.X_test_imputed, self.y_test))
-
-    def UQ_by_online_bagging_v2(self, x, y_true, verbose=True):
-        """
-        Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
-        """
-        for idx in range(self.n_estimators):
-            classifier = self.models_lst[idx]
-            y_pred = classifier.predict_one(x)
-            # TODO: not sure if it learns here
-            # print(f'Before training\nx={x}\ny={y_true}')
-            k = self._leveraging_bag(x=x, y=y_true)
-            for _ in range(k):
-                self.models_lst[idx] = classifier.learn_one(x=x, y=y_true)
-
-            if y_pred is not None:
-                self._rolling_update(self.model_predictions[idx], y_pred)
-
-    def _rolling_update(self, lst, item):
-        if self.n_sample <= self.metric_memory_length:
-            lst.append(item)
-        else:
-            lst[self.n_sample % self.metric_memory_length] = item
+    def _sync_with_true_model(self, true_model):
+        self.models_lst = [deepcopy(true_model) for _ in range(self.n_estimators)]
 
     def _leveraging_bag(self, **kwargs):
         # Leveraging bagging
         return utils.random.poisson(self.w, self._rng)
 
-    def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability):
+    def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter):
         self.accuracy = accuracy
         self.mean = np.mean(means)
         self.std = np.mean(stds)
         self.iqr = np.mean(iqr)
         self.per_sample_accuracy = np.mean(per_sample_accuracy)
         self.label_stability = np.mean(label_stability)
+        self.jitter = jitter
+
+        # Save metrics history
+        self.accuracy_lst.append(self.accuracy)
+        self.mean_lst.append(self.mean)
+        self.std_lst.append(self.std)
+        self.iqr_lst.append(self.iqr)
+        self.per_sample_accuracy_lst.append(self.per_sample_accuracy)
+        self.label_stability_lst.append(self.label_stability)
+        self.jitter_lst.append(self.jitter)
 
     def print_metrics(self):
-        print(f'Accuracy: {self.accuracy}\n'
+        print(f'Sample number: {self.n_sample}\n'
+              f'Accuracy: {self.accuracy}\n'
               f'Mean: {self.mean}\n'
               f'Std: {self.std}\n'
               f'IQR: {self.iqr}\n'
               f'Per sample accuracy: {self.per_sample_accuracy}\n'
-              f'Label stability: {self.label_stability}\n\n')
+              f'Label stability: {self.label_stability}\n'
+              f'Jitter: {self.jitter}\n\n')
+
+    def plot_metrics_history(self):
+        x_ticks = [(n_metric + 1) * self.batch_size for n_metric in range(len(self.label_stability_lst))]
+        sns.set(rc={'figure.figsize':(15, 5)})
+
+        # Plot the Accuracy history
+        for label, metrics_lst in [('Accuracy', self.accuracy_lst), ('Mean', self.mean_lst), ('Std', self.std_lst),
+                                   ('IQR', self.iqr_lst), ('Per sample accuracy', self.per_sample_accuracy_lst),
+                                   ('Label stability', self.label_stability_lst), ('Jitter', self.jitter_lst)]:
+            fig, ax = plt.subplots(figsize=(10, 6))
+            ax.grid(alpha=0.75)
+            ax.plot(x_ticks, metrics_lst, lw=3, color='blue', alpha=0.8, label=label)
+            ax.set_title(f'{label} {round(metrics_lst[-1], 4)}')
+            plt.xlabel("Sample number")
+            plt.ylabel(label)
+
+        plt.show()

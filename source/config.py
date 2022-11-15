@@ -4,6 +4,7 @@ from xgboost import XGBClassifier
 
 SEED = 42
 TEST_SIZE = 0.2
+BOOTSTRAP_FRACTION = 0.6
 
 FOLKTABLES_COLUMN_TO_TYPE = {
     "categorical": ['SCHL', 'MAR', 'MIL', 'ESP', 'MIG', 'DREM', 'NATIVITY', 'DIS', 'DEAR', 'DEYE', 'SEX', 'RAC1P', 'RELP', 'CIT', 'ANC'],
