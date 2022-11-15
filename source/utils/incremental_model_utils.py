@@ -1,7 +1,9 @@
 from river import metrics
 
+from source.config import logger
 
-def train_incremental_model(base_model, dataset, dataset_size, train_fraction, label_mapping):
+
+def train_incremental_model(base_model, dataset, dataset_size, label_mapping, train_fraction=1.0):
     # Conduct model training
     train_size = int(dataset_size * train_fraction)
     acc_metric = metrics.Accuracy()
@@ -16,6 +18,9 @@ def train_incremental_model(base_model, dataset, dataset_size, train_fraction, l
             f1_metric = f1_metric.update(y_true, y_pred)
 
         base_model.learn_one(x=x, y=y_true)
+        if (idx + 1) % 1000 == 0:
+            logger.info(f'{idx + 1} iterations from {dataset_size} are passed')
+
         if idx + 1 == train_size:
             break
 
