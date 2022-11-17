@@ -12,9 +12,9 @@ from source.utils.stability_utils import generate_bootstrap
 from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
 
 
-class ClassicStabilityAnalyzer:
+class BaseStabilityAnalyzer:
     def __init__(self, base_model, base_model_name, train_pd_dataset, test_pd_dataset, test_y_true,
-                 target_column, dataset_name, n_estimators=100):
+                 dataset_name, n_estimators=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
@@ -27,9 +27,8 @@ class ClassicStabilityAnalyzer:
         self.__logger = get_logger()
 
         self.train_pd_dataset = train_pd_dataset
-        self.test_pd_dataset = test_pd_dataset
+        self.test_dataset = test_pd_dataset
         self.test_y_true = test_y_true.values
-        self.target_column = target_column
 
         # Metrics
         self.general_accuracy = None
@@ -40,9 +39,8 @@ class ClassicStabilityAnalyzer:
         self.label_stability = None
         self.jitter = None
 
-    def _batch_predict(self, classifier, test_df):
-        X_test, y_test = self._get_features_target_split(test_df)
-        return classifier.predict(X_test)
+    def _batch_predict(self, classifier, test_dataset):
+        pass
 
     def measure_stability_metrics(self, make_plots=False):
         """
@@ -51,8 +49,7 @@ class ClassicStabilityAnalyzer:
         :param make_plots: bool, if display plots for analysis
         """
         # For computing fairness-related metrics
-        # boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
-        boostrap_size = int(0.9 * self.train_pd_dataset.shape[0])
+        boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
 
         # Quantify uncertainty for the bet model
         models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
@@ -85,19 +82,13 @@ class ClassicStabilityAnalyzer:
             classifier = self.models_lst[idx]
             df_sample = generate_bootstrap(self.train_pd_dataset, boostrap_size, with_replacement)
             classifier = self._fit_model(classifier, df_sample)
-            models_predictions[idx] = self._batch_predict(classifier, self.test_pd_dataset)
+            models_predictions[idx] = self._batch_predict(classifier, self.test_dataset)
             self.__logger.info(f'Classifier {idx + 1} / {self.n_estimators} was tested')
 
         return models_predictions
 
-    def _get_features_target_split(self, df):
-        y = df[self.target_column]
-        X = df.drop([self.target_column], axis=1)
-        return X, y
-
     def _fit_model(self, classifier, train_df):
-        X_train, y_train = self._get_features_target_split(train_df)
-        return classifier.fit(X_train, y_train)
+        pass
 
     def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter):
         self.general_accuracy = np.round(accuracy, 4)
