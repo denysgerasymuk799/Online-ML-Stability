@@ -28,13 +28,15 @@ def folds_iterator(n_folds, samples_per_fold, size):
               np.arange(size - samples_per_fold * (i + 1), size - samples_per_fold * i)
 
 
-def test_baseline_models(X_data, y_data, categorical_columns, numerical_columns, n_folds = 3):
+def test_baseline_models(X_data, y_data, categorical_columns, numerical_columns, dataset_name, n_folds = 3):
     """
     Prepare datasets and find the best model for an original baseline dataset without nulls.
 
     :return: a dataframe of metrics, measured for each model and its best parameters
     """
-    X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=TEST_SIZE, random_state=SEED)
+    dataset_size = X_data.shape[0]
+    test_size = int(TEST_FRACTION * dataset_size)
+    X_train, X_test, y_train, y_test = train_test_split(X_data, y_data, test_size=test_size, random_state=SEED)
     print("Baseline X_train shape: ", X_train.shape)
     print("Baseline X_test shape: ", X_test.shape)
 
@@ -50,7 +52,7 @@ def test_baseline_models(X_data, y_data, categorical_columns, numerical_columns,
     best_results_df = pd.DataFrame(columns=('Dataset_Name', 'Model_Name', 'F1_Score', 'Accuracy_Score',
                                             'Model_Best_Params', 'Model_Pred'))
     ML_results_df = test_ML_models(best_results_df, MODELS_CONFIG, n_folds, samples_per_fold,
-                                   X_train_features, y_train, X_test_features, y_test, "Folktables [NY 2018]",
+                                   X_train_features, y_train, X_test_features, y_test, dataset_name,
                                    show_plots=True, debug_mode=True)
     return ML_results_df
 
