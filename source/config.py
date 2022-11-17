@@ -1,9 +1,5 @@
-import logging
-
 from sklearn.ensemble import RandomForestClassifier
 from xgboost import XGBClassifier
-
-from source.custom_logger import CustomHandler
 
 
 SEED = 42
