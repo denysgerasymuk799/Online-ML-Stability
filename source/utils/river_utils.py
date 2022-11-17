@@ -22,7 +22,7 @@ def ddict2dict(d):
 
 def df_to_stream_buffer(df):
     buffer = StringIO()  # creating an empty buffer
-    df.to_csv(buffer)  # filling that buffer
+    df.to_csv(buffer, index=False)  # filling that buffer
     buffer.seek(0) # set to the start of the stream
 
     return buffer

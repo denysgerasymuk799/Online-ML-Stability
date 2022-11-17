@@ -1,7 +1,21 @@
+import logging
 import pandas as pd
 import matplotlib.pyplot as plt
 
 from source.config import FOLKTABLES_COLUMN_TO_TYPE
+from source.custom_logger import CustomHandler
+
+
+def get_logger():
+    logger = logging.getLogger('root')
+    logger.setLevel('INFO')
+    logging.disable(logging.DEBUG)
+
+    if logger.hasHandlers():
+        logger.handlers.clear()
+    logger.addHandler(CustomHandler())
+
+    return logger
 
 
 def get_folktables_column_type(column_name):

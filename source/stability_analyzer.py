@@ -1,33 +1,39 @@
+import os
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-from source.config import logger
 from source.config import BOOTSTRAP_FRACTION
+from source.utils.simple_utils import get_logger
 from source.utils.EDA_utils import plot_generic
 from source.utils.stability_utils import generate_bootstrap
 from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
-from source.folktables_dataset_from_pd import FolktablesDatasetFromPandas
 
 
 class StabilityAnalyzer:
-    def __init__(self, base_model, train_pd_dataset, test_pd_dataset, test_y_true, n_estimators=100):
+    def __init__(self, base_model, base_model_name, train_pd_dataset, test_pd_dataset, test_y_true,
+                 dataset_reader, dataset_name, n_estimators=100, prediction_mapping=None):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
         self.base_model = base_model
+        self.base_model_name = base_model_name
+        self.dataset_name = dataset_name
         self.n_estimators = n_estimators
         self.models_lst = [deepcopy(base_model) for _ in range(n_estimators)]
-        self.__logger = logger
 
+        self.__logger = get_logger()
+        self.__prediction_mapping = prediction_mapping
+        
+        self.dataset_reader = dataset_reader
         self.train_pd_dataset = train_pd_dataset
-        self.test_pd_dataset = test_pd_dataset
-        self.test_dataset = FolktablesDatasetFromPandas(pd_dataset=self.test_pd_dataset)
+        self.test_dataset = dataset_reader(pd_dataset=test_pd_dataset)
         self.test_y_true = test_y_true.values
 
         # Metrics
-        self.accuracy = None
+        self.general_accuracy = None
         self.mean = None
         self.std = None
         self.iqr = None
@@ -35,11 +41,13 @@ class StabilityAnalyzer:
         self.label_stability = None
         self.jitter = None
 
-    @staticmethod
-    def _batch_predict(classifier, test_dataset):
+    def _batch_predict(self, classifier, test_dataset):
         predictions = []
         for x, y_true in test_dataset:
-            predictions.append(classifier.predict_one(x))
+            y_pred = classifier.predict_one(x)
+            if self.__prediction_mapping is not None:
+                y_pred = self.__prediction_mapping[y_pred]
+            predictions.append(y_pred)
 
         return predictions
 
@@ -53,7 +61,7 @@ class StabilityAnalyzer:
         boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
 
         # Quantify uncertainty for the bet model
-        models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True, verbose=False)
+        models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
 
         # Count metrics
         y_preds, results, means, stds, iqr, accuracy, jitter = count_prediction_stats(self.test_y_true,
@@ -71,7 +79,9 @@ class StabilityAnalyzer:
             plot_generic(per_sample_accuracy, stds, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
             plot_generic(per_sample_accuracy, iqr, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
 
-    def UQ_by_boostrap(self, boostrap_size, with_replacement, verbose=True):
+        self.save_metrics_to_file()
+
+    def UQ_by_boostrap(self, boostrap_size, with_replacement):
         """
         Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
         """
@@ -81,32 +91,49 @@ class StabilityAnalyzer:
             classifier = self.models_lst[idx]
             df_sample = generate_bootstrap(self.train_pd_dataset, boostrap_size, with_replacement)
             classifier = self._fit_model(classifier, df_sample)
-            models_predictions[idx] = StabilityAnalyzer._batch_predict(classifier, self.test_dataset)
+            models_predictions[idx] = self._batch_predict(classifier, self.test_dataset)
             self.__logger.info(f'Classifier {idx + 1} / {self.n_estimators} was tested')
 
         return models_predictions
 
     def _fit_model(self, classifier, train_df):
-        train_dataset = FolktablesDatasetFromPandas(pd_dataset=train_df)
+        train_dataset = self.dataset_reader(pd_dataset=train_df)
         for x, y_true in train_dataset:
             classifier.learn_one(x=x, y=y_true)
 
         return classifier
 
     def __update_metrics(self, accuracy, means, stds, iqr, per_sample_accuracy, label_stability, jitter):
-        self.accuracy = accuracy
-        self.mean = np.mean(means)
-        self.std = np.mean(stds)
-        self.iqr = np.mean(iqr)
-        self.per_sample_accuracy = np.mean(per_sample_accuracy)
-        self.label_stability = np.mean(label_stability)
-        self.jitter = jitter
+        self.general_accuracy = np.round(accuracy, 4)
+        self.mean = np.round(np.mean(means), 4)
+        self.std = np.round(np.mean(stds), 4)
+        self.iqr = np.round(np.mean(iqr), 4)
+        self.per_sample_accuracy = np.round(np.mean(per_sample_accuracy), 4)
+        self.label_stability = np.round(np.mean(label_stability), 4)
+        self.jitter = np.round(jitter, 4)
 
     def print_metrics(self):
-        print(f'Avg Classifiers Individual Accuracy: {self.accuracy}\n'
+        print(f'General Ensemble Accuracy: {self.general_accuracy}\n'
               f'Mean: {self.mean}\n'
               f'Std: {self.std}\n'
               f'IQR: {self.iqr}\n'
               f'Per sample accuracy: {self.per_sample_accuracy}\n'
               f'Label stability: {self.label_stability}\n'
               f'Jitter: {self.jitter}\n\n')
+
+    def save_metrics_to_file(self):
+        metrics_to_report = {}
+        metrics_to_report['General_Ensemble_Accuracy'] = [self.general_accuracy]
+        metrics_to_report['Mean'] = [self.mean]
+        metrics_to_report['Std'] = [self.std]
+        metrics_to_report['IQR'] = [self.iqr]
+        metrics_to_report['Per_Sample_Accuracy'] = [self.per_sample_accuracy]
+        metrics_to_report['Label_Stability'] = [self.label_stability]
+        metrics_to_report['Jitter'] = [self.jitter]
+        metrics_df = pd.DataFrame(metrics_to_report)
+
+        dir_path = os.path.join('..', '..', 'results', 'models_stability_metrics')
+        os.makedirs(dir_path, exist_ok=True)
+
+        filename = f"{self.dataset_name}_{self.n_estimators}_estimators_{self.base_model_name}_base_model_stability_metrics.csv"
+        metrics_df.to_csv(f'{dir_path}/{filename}', index=False)

@@ -9,11 +9,11 @@ from source.utils.simple_utils import set_size
 
 
 def compute_label_stability(predicted_labels):
-    '''
+    """
     Label stability is defined as the absolute difference between the number of times the sample is classified as 0 and 1
     If the absolute difference is large, the label is more stable
     If the difference is exactly zero then it's extremely unstable --- equally likely to be classified as 0 or 1
-    '''
+    """
     count_pos = sum(predicted_labels)
     count_neg = len(predicted_labels) - count_pos
     return np.abs(count_pos - count_neg)/len(predicted_labels)

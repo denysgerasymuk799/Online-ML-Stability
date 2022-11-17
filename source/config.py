@@ -7,14 +7,9 @@ from source.custom_logger import CustomHandler
 
 
 SEED = 42
-TEST_SIZE = 0.2
-VALIDATION_SIZE = TEST_SIZE
+TEST_FRACTION = 0.2
+VALIDATION_FRACTION = TEST_FRACTION
 BOOTSTRAP_FRACTION = 0.6
-
-logger = logging.getLogger('root')
-logger.setLevel('INFO')
-logging.disable(logging.DEBUG)
-logger.addHandler(CustomHandler())
 
 FOLKTABLES_COLUMN_TO_TYPE = {
     "categorical": ['SCHL', 'MAR', 'MIL', 'ESP', 'MIG', 'DREM', 'NATIVITY', 'DIS', 'DEAR', 'DEYE', 'SEX', 'RAC1P', 'RELP', 'CIT', 'ANC'],
@@ -25,6 +20,9 @@ DATASETS_CONFIG = {
     'folktables': {
         'target_column': 'ESR',
         'numerical_features': ['AGEP', 'SCHL']
+    },
+    'phishing': {
+        'target_column': 'is_phishing',
     }
 }
 
