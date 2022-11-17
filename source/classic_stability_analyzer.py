@@ -42,7 +42,7 @@ class ClassicStabilityAnalyzer:
 
     def _batch_predict(self, classifier, test_df):
         X_test, y_test = self._get_features_target_split(test_df)
-        return classifier.predict_proba(X_test)[:, 0]
+        return classifier.predict(X_test)
 
     def measure_stability_metrics(self, make_plots=False):
         """
@@ -51,7 +51,8 @@ class ClassicStabilityAnalyzer:
         :param make_plots: bool, if display plots for analysis
         """
         # For computing fairness-related metrics
-        boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
+        # boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
+        boostrap_size = int(0.9 * self.train_pd_dataset.shape[0])
 
         # Quantify uncertainty for the bet model
         models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
