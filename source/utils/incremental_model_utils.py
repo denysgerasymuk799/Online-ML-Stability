@@ -3,12 +3,11 @@ from river import metrics
 from source.utils.simple_utils import get_logger
 
 
-def train_incremental_model(base_model, dataset, dataset_size, print_every=1000,
-                            label_mapping=None, prediction_mapping=None, train_fraction=1.0):
+def train_incremental_model(base_model, dataset, train_size, print_every=1000,
+                            label_mapping=None, prediction_mapping=None):
     logger = get_logger()
 
     # Conduct model training
-    train_size = int(dataset_size * train_fraction)
     acc_metric = metrics.Accuracy()
     f1_metric = metrics.WeightedF1()
     for idx, (x, y_true) in enumerate(dataset):
@@ -16,11 +15,11 @@ def train_incremental_model(base_model, dataset, dataset_size, print_every=1000,
             y_true = label_mapping[y_true]
 
         y_pred = base_model.predict_one(x)
-        if prediction_mapping is not None:
-            y_pred = prediction_mapping[y_pred]
 
         # Update the error metric
         if y_pred is not None:
+            if prediction_mapping is not None:
+                y_pred = prediction_mapping[y_pred]
             acc_metric = acc_metric.update(y_true, y_pred)
             f1_metric = f1_metric.update(y_true, y_pred)
 
