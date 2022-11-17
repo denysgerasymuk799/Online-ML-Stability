@@ -1,0 +1,2 @@
+General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter
+0.8146,0.4449,0.0509,0.0408,0.8101,0.9418,0.05

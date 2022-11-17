@@ -1,3 +1,4 @@
+from source.config import CV_BOOTSTRAP_FRACTION
 from source.base_stability_analyzer import BaseStabilityAnalyzer
 
 
@@ -7,7 +8,8 @@ class IncrementalStabilityAnalyzer(BaseStabilityAnalyzer):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
-        super().__init__(base_model, base_model_name, train_pd_dataset, dataset_reader(pd_dataset=test_pd_dataset),
+        super().__init__(base_model, base_model_name, CV_BOOTSTRAP_FRACTION,
+                         train_pd_dataset, dataset_reader(pd_dataset=test_pd_dataset),
                          test_y_true, dataset_name, n_estimators)
         self.__prediction_mapping = prediction_mapping
         self.dataset_reader = dataset_reader

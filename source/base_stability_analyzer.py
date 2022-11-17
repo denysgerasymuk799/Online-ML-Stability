@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 from copy import deepcopy
 
-from source.config import BOOTSTRAP_FRACTION
 from source.utils.simple_utils import get_logger
 from source.utils.EDA_utils import plot_generic
 from source.utils.stability_utils import generate_bootstrap
@@ -13,13 +12,14 @@ from source.utils.stability_utils import count_prediction_stats, get_per_sample_
 
 
 class BaseStabilityAnalyzer:
-    def __init__(self, base_model, base_model_name, train_pd_dataset, test_pd_dataset, test_y_true,
-                 dataset_name, n_estimators=100):
+    def __init__(self, base_model, base_model_name, bootstrap_fraction,
+                 train_pd_dataset, test_pd_dataset, test_y_true, dataset_name, n_estimators=100):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
         self.base_model = base_model
         self.base_model_name = base_model_name
+        self.bootstrap_fraction = bootstrap_fraction
         self.dataset_name = dataset_name
         self.n_estimators = n_estimators
         self.models_lst = [deepcopy(base_model) for _ in range(n_estimators)]
@@ -49,7 +49,7 @@ class BaseStabilityAnalyzer:
         :param make_plots: bool, if display plots for analysis
         """
         # For computing fairness-related metrics
-        boostrap_size = int(BOOTSTRAP_FRACTION * self.train_pd_dataset.shape[0])
+        boostrap_size = int(self.bootstrap_fraction * self.train_pd_dataset.shape[0])
 
         # Quantify uncertainty for the bet model
         models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
