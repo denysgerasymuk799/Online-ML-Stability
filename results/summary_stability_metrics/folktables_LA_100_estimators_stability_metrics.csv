@@ -1,0 +1,5 @@
+Model_Name,General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter
+XGBClassifier,0.8183,0.4547,0.0385,0.0311,0.8179,0.9618,0.0277
+HoeffdingTreeClassifier,0.8074,0.4705,0.0711,0.0163,0.7995,0.949,0.0423
+Adaptive Random Forests,0.8148,0.4434,0.0681,0.0521,0.8105,0.9339,0.048
+Streaming_Random_Patches,0.8128,0.4451,0.071,0.0511,0.809,0.9314,0.0504
