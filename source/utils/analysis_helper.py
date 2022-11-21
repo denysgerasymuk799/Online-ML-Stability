@@ -57,7 +57,7 @@ def load_groups_of_interest(group_info, X_test_df):
         raw_values = X_test_df[group_info[group_type]['column_name']].values
         
         if group_info[group_type]['preprocess'] == 0:
-            res['values']= raw_values
+            res['values'] = raw_values
         else:
             # Need to preprocess/threshold:
             threshold = group_info[group_type]['threshold']
