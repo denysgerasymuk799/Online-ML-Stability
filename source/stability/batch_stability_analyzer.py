@@ -6,6 +6,7 @@ class BatchStabilityAnalyzer(BaseStabilityAnalyzer):
     def __init__(self, base_model, base_model_name, train_pd_dataset, test_pd_dataset, test_y_true,
                  target_column, dataset_name, n_estimators=100):
         """
+        :param target_column: name of the y-column
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
         super().__init__(base_model, base_model_name, TRAIN_CV_BOOTSTRAP_FRACTION,

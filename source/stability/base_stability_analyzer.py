@@ -15,6 +15,13 @@ class BaseStabilityAnalyzer:
     def __init__(self, base_model, base_model_name, bootstrap_fraction,
                  train_pd_dataset, test_pd_dataset, test_y_true, dataset_name, n_estimators=100):
         """
+        :param base_model: base model for stability measuring
+        :param base_model_name: model name like 'HoeffdingTreeClassifier' or 'LogisticRegression'
+        :param bootstrap_fraction: [0-1], fraction from train_pd_dataset for fitting an ensemble of base models
+        :param train_pd_dataset: pandas train dataset
+        :param test_pd_dataset: pandas test dataset
+        :param test_y_true: y value from test_pd_dataset
+        :param dataset_name: str, like 'Folktables' or 'Phishing'
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
         """
         self.base_model = base_model
@@ -44,14 +51,12 @@ class BaseStabilityAnalyzer:
 
     def measure_stability_metrics(self, make_plots=False):
         """
-        Measure metrics for the evaluation model. Display plots for analysis if needed. Save results to a .pkl file
+        Measure metrics for the base model. Display plots for analysis if needed. Save results to a .pkl file
 
         :param make_plots: bool, if display plots for analysis
         """
-        # For computing fairness-related metrics
+        # Quantify uncertainty for the base model
         boostrap_size = int(self.bootstrap_fraction * self.train_pd_dataset.shape[0])
-
-        # Quantify uncertainty for the bet model
         models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
 
         # Count metrics
@@ -74,7 +79,7 @@ class BaseStabilityAnalyzer:
 
     def UQ_by_boostrap(self, boostrap_size, with_replacement):
         """
-        Quantifying uncertainty of predictive model by constructing an ensemble from bootstrapped samples
+        Quantifying uncertainty of the base model by constructing an ensemble from bootstrapped samples
         """
         models_predictions = {idx: [] for idx in range(self.n_estimators)}
         for idx in range(self.n_estimators):

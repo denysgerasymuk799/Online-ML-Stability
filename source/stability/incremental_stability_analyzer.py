@@ -7,6 +7,8 @@ class IncrementalStabilityAnalyzer(BaseStabilityAnalyzer):
                  dataset_reader, dataset_name, n_estimators=100, prediction_mapping=None):
         """
         :param n_estimators: a number of estimators in ensemble to measure evaluation_model stability
+        :param prediction_mapping: dict, used to map model predictions to final results.
+        For example, LogisticRegression always returns True or False values, but for stability measuring we need numbers
         """
         super().__init__(base_model, base_model_name, CV_BOOTSTRAP_FRACTION,
                          train_pd_dataset, dataset_reader(pd_dataset=test_pd_dataset),

@@ -2,6 +2,9 @@ from source.utils.river_utils import iter_pd_dataset
 
 
 class PhishingDatasetFromPandas:
+    """
+    Loader that converts a pandas df to River dataset for incremental models
+    """
     def __init__(self, pd_dataset):
         self.pd_dataset = pd_dataset
 

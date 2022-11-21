@@ -3,6 +3,9 @@ from river.datasets import base
 
 
 class HealthRiskDataset(base.FileDataset):
+    """
+    Dataset loader for River incremental models
+    """
     def __init__(self, directory="../datasets", filename="Maternal-Health-Risk-Data-Set.csv", delimiter=','):
         super().__init__(
             filename=filename,

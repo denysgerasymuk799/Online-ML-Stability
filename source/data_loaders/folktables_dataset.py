@@ -3,6 +3,9 @@ from river.datasets import base
 
 
 class FolktablesDataset(base.FileDataset):
+    """
+    Dataset loader for River incremental models
+    """
     def __init__(self, directory="../datasets", filename="folktables-NY-2018.csv", delimiter=','):
         super().__init__(
             filename=filename,

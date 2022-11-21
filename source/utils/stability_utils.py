@@ -20,11 +20,18 @@ def compute_label_stability(predicted_labels):
 
 
 def compute_churn(predicted_labels_1, predicted_labels_2):
+    """
+    Pairwise stability metric for two model predictions
+    """
     return sum(int(predicted_labels_1[i] != predicted_labels_2[i])
                for i in range(len(predicted_labels_1))) / len(predicted_labels_1)
 
 
 def compute_jitter(models_prediction_labels):
+    """
+    Jitter is a stability metric that shows how the base model predictions fluctuate.
+    Values closer to 0 -- perfect stability, values closer to 1 -- extremely bad stability.
+    """
     n_models = len(models_prediction_labels)
     models_idx_lst = [i for i in range(n_models)]
     churns_sum = 0
@@ -35,16 +42,19 @@ def compute_jitter(models_prediction_labels):
 
 
 def count_prediction_stats(y_test, uq_results):
+    """
+    Compute means, stds, iqr, accuracy, jitter and transform predictions to pd df
+
+    :param y_test: true labels
+    :param uq_results: predicted labels
+    """
     results = pd.DataFrame(uq_results).transpose()
     means = results.mean().values
     stds = results.std().values
     iqr = sp.stats.iqr(results, axis=0)
     jitter = compute_jitter(uq_results)
 
-    # y_preds = np.array([int(x<0.5) for x in results.mean().values])
     y_preds = np.array([round(x) for x in results.mean().values])
-
-    # TODO: remove accuracy
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))
 
     return y_preds, results, means, stds, iqr, accuracy, jitter
@@ -63,7 +73,6 @@ def get_per_sample_accuracy(y_test, results):
     acc = None
     for sample in range(len(y_test)):
         per_sample_predictions[sample] =  [round(x) for x in results[sample].values]
-        # per_sample_predictions[sample] =  [int(x<0.5) for x in results[sample].values]
         label_stability.append(compute_label_stability(per_sample_predictions[sample]))
 
         if y_test[sample] == 1:
