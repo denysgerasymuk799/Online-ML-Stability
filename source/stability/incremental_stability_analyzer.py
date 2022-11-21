@@ -1,5 +1,5 @@
 from source.config import CV_BOOTSTRAP_FRACTION
-from source.base_stability_analyzer import BaseStabilityAnalyzer
+from source.stability.base_stability_analyzer import BaseStabilityAnalyzer
 
 
 class IncrementalStabilityAnalyzer(BaseStabilityAnalyzer):
