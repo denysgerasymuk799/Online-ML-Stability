@@ -49,7 +49,7 @@ class BaseStabilityAnalyzer:
     def _batch_predict(self, classifier, test_dataset):
         pass
 
-    def measure_stability_metrics(self, make_plots=False):
+    def measure_stability_metrics(self, make_plots=False, save_results=True):
         """
         Measure metrics for the base model. Display plots for analysis if needed. Save results to a .pkl file
 
@@ -75,7 +75,10 @@ class BaseStabilityAnalyzer:
             plot_generic(per_sample_accuracy, stds, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
             plot_generic(per_sample_accuracy, iqr, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
 
-        self.save_metrics_to_file()
+        if save_results:
+            self.save_metrics_to_file()
+
+        return y_preds, self.test_y_true
 
     def UQ_by_boostrap(self, boostrap_size, with_replacement):
         """
@@ -105,6 +108,8 @@ class BaseStabilityAnalyzer:
         self.jitter = np.round(jitter, 4)
 
     def print_metrics(self):
+        print('\n')
+        print("#" * 30, "Stability metrics", "#" * 30)
         print(f'General Ensemble Accuracy: {self.general_accuracy}\n'
               f'Mean: {self.mean}\n'
               f'Std: {self.std}\n'
@@ -113,8 +118,23 @@ class BaseStabilityAnalyzer:
               f'Label stability: {self.label_stability}\n'
               f'Jitter: {self.jitter}\n\n')
 
+    def get_metrics_dict(self):
+        return {
+            'General_Ensemble_Accuracy': self.general_accuracy,
+            'Mean': self.mean,
+            'Std': self.std,
+            'IQR': self.iqr,
+            'Per_Sample_Accuracy': self.per_sample_accuracy,
+            'Label_Stability': self.label_stability,
+            'Jitter': self.jitter,
+        }
+
     def save_metrics_to_file(self):
         metrics_to_report = {}
+        metrics_to_report['Dataset_Name'] = [self.dataset_name]
+        metrics_to_report['Base_Model_Name'] = [self.base_model_name]
+        metrics_to_report['N_Estimators'] = [self.n_estimators]
+
         metrics_to_report['General_Ensemble_Accuracy'] = [self.general_accuracy]
         metrics_to_report['Mean'] = [self.mean]
         metrics_to_report['Std'] = [self.std]

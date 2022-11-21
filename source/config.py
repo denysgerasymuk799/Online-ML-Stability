@@ -24,6 +24,23 @@ DATASETS_CONFIG = {
     }
 }
 
+TEST_GROUPS_CONFIG = {
+    'folktables': {
+        "Race": {
+            "column_name": "RAC1P",
+            "preprocess": 0,
+            "advantaged": 1,
+            "disadvantaged": 2
+        },
+        "Sex": {
+            "column_name": "SEX",
+            "preprocess": 0,
+            "advantaged": 1,
+            "disadvantaged": 2
+        }
+    }
+}
+
 MODELS_CONFIG = [
     {
         'model_name': 'XGBClassifier',

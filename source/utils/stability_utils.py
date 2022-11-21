@@ -1,8 +1,12 @@
+import os
 import itertools
 import numpy as np
 import pandas as pd
 import scipy as sp
+import seaborn as sns
 
+from os import listdir
+from os.path import isfile, join
 from matplotlib import pyplot as plt
 
 from source.utils.simple_utils import set_size
@@ -92,6 +96,23 @@ def generate_bootstrap(df, boostrap_size, with_replacement=True):
         return bootstrap_features
     else:
         raise ValueError('Bootstrap samples are not of the size requested')
+
+
+def display_result_plots(results_dir):
+    sns.set_style("darkgrid")
+    results = dict()
+    filenames = [f for f in listdir(results_dir) if isfile(join(results_dir, f))]
+
+    for filename in filenames:
+        results_df = pd.read_csv(results_dir + filename)
+        results[f'{results_df.iloc[0]["Base_Model_Name"]}_{results_df.iloc[0]["N_Estimators"]}_estimators'] = results_df
+
+    y_metrics = ['SPD_Race', 'SPD_Sex', 'SPD_Race_Sex', 'EO_Race', 'EO_Sex', 'EO_Race_Sex']
+    x_metrics = ['Label_Stability', 'General_Ensemble_Accuracy', 'Std']
+    for x_metric in x_metrics:
+        for y_metric in y_metrics:
+            x_lim = 0.3 if x_metric == 'SD' else 1.0
+            display_uncertainty_plot(results, x_metric, y_metric, x_lim)
 
 
 def display_uncertainty_plot(results, x_metric, y_metric, x_lim):
