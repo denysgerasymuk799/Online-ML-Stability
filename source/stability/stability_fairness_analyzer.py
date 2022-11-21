@@ -7,6 +7,11 @@ from source.stability.base_stability_analyzer import BaseStabilityAnalyzer
 
 class StabilityFairnessAnalyzer:
     def __init__(self, stability_analyzer: BaseStabilityAnalyzer, test_groups: dict):
+        """
+
+        :param stability_analyzer: an initialized stability analyzer object, which will be used for measurements
+        :param test_groups: advantage and disadvantage groups to measure fairness metrics
+        """
         self.dataset_name = stability_analyzer.dataset_name
         self.n_estimators = stability_analyzer.n_estimators
         self.base_model_name = stability_analyzer.base_model_name
@@ -26,7 +31,8 @@ class StabilityFairnessAnalyzer:
         self.stability_metrics_dct = self.__stability_analyzer.get_metrics_dict()
 
         # Count and display fairness metrics
-        self.fairness_metrics_dct = self.__fairness_analyzer.get_metrics_dict(y_preds, test_y_true)
+        self.__fairness_analyzer.measure_metrics(y_preds, test_y_true)
+        self.fairness_metrics_dct = self.__fairness_analyzer.get_metrics_dict()
 
         # Save results to a .pkl file
         self.save_metrics_to_file()

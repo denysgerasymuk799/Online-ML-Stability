@@ -77,8 +77,8 @@ class BaseStabilityAnalyzer:
 
         if save_results:
             self.save_metrics_to_file()
-
-        return y_preds, self.test_y_true
+        else:
+            return y_preds, self.test_y_true
 
     def UQ_by_boostrap(self, boostrap_size, with_replacement):
         """

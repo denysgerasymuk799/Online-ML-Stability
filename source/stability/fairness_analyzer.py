@@ -8,13 +8,14 @@ class FairnessAnalyzer:
         self.test_groups = test_groups
         self.fairness_metrics_dict = dict()
     
-    def get_metrics_dict(self, y_preds, y_test):
+    def measure_metrics(self, y_preds, y_test):
         metrics = ['Accuracy', 'Disparate_Impact', 'Equal_Opportunity', 'Statistical_Parity_Difference']
 
         for metric in metrics:
             self.fairness_metrics_dict[metric] = self.compute_fairness_metric(y_preds, y_test, metric)
         self.print_metrics()
 
+    def get_metrics_dict(self):
         return self.fairness_metrics_dict
 
     def print_metrics(self):
