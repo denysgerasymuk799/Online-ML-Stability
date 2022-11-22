@@ -52,7 +52,13 @@ def count_prediction_stats(y_test, uq_results):
     :param y_test: true labels
     :param uq_results: predicted labels
     """
-    results = pd.DataFrame(uq_results).transpose()
+    if isinstance(uq_results, np.ndarray):
+        results = pd.DataFrame(uq_results)
+    else:
+        results = pd.DataFrame(uq_results).transpose()
+
+    print('results.shape -- ', results.shape)
+
     means = results.mean().values
     stds = results.std().values
     iqr = sp.stats.iqr(results, axis=0)

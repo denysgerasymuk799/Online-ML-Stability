@@ -1,0 +1,2 @@
+Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter,Accuracy_Race,Accuracy_Sex,Accuracy_Race_Sex,Disparate_Impact_Race,Disparate_Impact_Sex,Disparate_Impact_Race_Sex,EO_Race,EO_Sex,EO_Race_Sex,SPD_Race,SPD_Sex,SPD_Race_Sex
+folktables_LA,HoeffdingTreeClassifier,200,0.8067,0.4696,0.0585,0.0219,0.8015,0.9545,0.0366,-0.0006,0.0569,0.0529,0.8697,1.0904,0.9901,0.0028,0.0011,-0.0009,-0.1071,-0.162,-0.2228
