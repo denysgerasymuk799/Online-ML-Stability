@@ -1,0 +1,2 @@
+Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter
+folktables_LA,Adaptive Random Forest,200,0.8136,0.4498,0.0664,0.0471,0.8096,0.9385,0.0448

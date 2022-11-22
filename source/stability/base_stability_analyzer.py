@@ -144,7 +144,7 @@ class BaseStabilityAnalyzer:
         metrics_to_report['Jitter'] = [self.jitter]
         metrics_df = pd.DataFrame(metrics_to_report)
 
-        dir_path = os.path.join('../..', '..', 'results', 'models_stability_metrics')
+        dir_path = os.path.join('..', '..', 'results', 'models_stability_metrics')
         os.makedirs(dir_path, exist_ok=True)
 
         filename = f"{self.dataset_name}_{self.n_estimators}_estimators_{self.base_model_name}_base_model_stability_metrics.csv"
