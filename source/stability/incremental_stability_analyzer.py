@@ -1,9 +1,8 @@
 from source.config import CV_BOOTSTRAP_FRACTION
-# from source.stability.base_stability_analyzer import BaseStabilityAnalyzer
-from source.stability.parallel_base_stability_analyzer import ParallelBaseStabilityAnalyzer
+from source.stability.base_stability_analyzer import BaseStabilityAnalyzer
 
 
-class IncrementalStabilityAnalyzer(ParallelBaseStabilityAnalyzer):
+class IncrementalStabilityAnalyzer(BaseStabilityAnalyzer):
     def __init__(self, base_model, base_model_name, train_pd_dataset, test_pd_dataset, test_y_true,
                  dataset_reader, dataset_name, n_estimators=100, prediction_mapping=None):
         """
