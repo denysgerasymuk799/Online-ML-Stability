@@ -17,6 +17,10 @@ class BatchStabilityAnalyzer(BaseStabilityAnalyzer):
         X_test, y_test = self._get_features_target_split(test_df)
         return classifier.predict(X_test)
 
+    def _batch_predict_proba(self, classifier, test_df):
+        X_test, y_test = self._get_features_target_split(test_df)
+        return classifier.predict_proba(X_test)[:, 0]
+
     def _get_features_target_split(self, df):
         y = df[self.target_column]
         X = df.drop([self.target_column], axis=1)

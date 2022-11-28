@@ -26,6 +26,16 @@ class IncrementalStabilityAnalyzer(BaseStabilityAnalyzer):
 
         return predictions
 
+    def _batch_predict_proba(self, classifier, test_dataset):
+        predictions = []
+        for x, y_true in test_dataset:
+            y_pred = classifier.predict_proba_one(x)[0]
+            if self.__prediction_mapping is not None:
+                y_pred = self.__prediction_mapping[y_pred]
+            predictions.append(y_pred)
+
+        return predictions
+
     def _fit_model(self, classifier, train_df):
         train_dataset = self.dataset_reader(pd_dataset=train_df)
         for x, y_true in train_dataset:

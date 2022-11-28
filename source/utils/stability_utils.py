@@ -1,4 +1,4 @@
-import os
+import math
 import itertools
 import numpy as np
 import pandas as pd
@@ -6,6 +6,7 @@ import scipy as sp
 import seaborn as sns
 
 from os import listdir
+from scipy.stats import entropy
 from os.path import isfile, join
 from matplotlib import pyplot as plt
 
@@ -45,29 +46,62 @@ def compute_jitter(models_prediction_labels):
     return churns_sum / (n_models * (n_models - 1) * 0.5)
 
 
-def count_prediction_stats(y_test, uq_results):
+def compute_entropy(labels):
+    """ Computes entropy of label distribution. """
+    n_labels = len(labels)
+
+    if n_labels <= 1:
+        return 0
+
+    value, counts = np.unique(labels, return_counts=True)
+    probs = counts / n_labels
+    n_classes = np.count_nonzero(probs)
+
+    if n_classes <= 1:
+        return 0
+
+    # Compute entropy
+    ent = 0.
+    base = math.e
+    for i in probs:
+        ent -= i * math.log(i, base)
+
+    return ent
+
+
+def compute_conf_interval(labels):
+    """ Create 95% confidence interval for population mean weight """
+    return sp.stats.norm.interval(alpha=0.95, loc=np.mean(labels), scale=sp.stats.sem(labels))
+
+
+def count_prediction_stats(y_test, predictions, predictions_proba):
     """
     Compute means, stds, iqr, accuracy, jitter and transform predictions to pd df
 
     :param y_test: true labels
     :param uq_results: predicted labels
     """
-    if isinstance(uq_results, np.ndarray):
-        results = pd.DataFrame(uq_results)
+    if isinstance(predictions, np.ndarray):
+        results = pd.DataFrame(predictions)
+        results_proba = pd.DataFrame(predictions_proba)
     else:
-        results = pd.DataFrame(uq_results).transpose()
+        results = pd.DataFrame(predictions).transpose()
+        results_proba = pd.DataFrame(predictions_proba).transpose()
 
     print('results.shape -- ', results.shape)
 
-    means = results.mean().values
-    stds = results.std().values
-    iqr = sp.stats.iqr(results, axis=0)
-    jitter = compute_jitter(uq_results)
+    means_lst = results_proba.mean().values
+    stds_lst = results_proba.std().values
+    iqr_lst = sp.stats.iqr(results_proba, axis=0)
+    conf_interval_df = pd.DataFrame(np.apply_along_axis(compute_conf_interval, 1, results_proba.transpose().values),
+                                    columns=['lower_bound', 'upper_bound'])
+    entropy_lst = np.apply_along_axis(compute_entropy, 1, results_proba.transpose().values)
+    jitter_lst = compute_jitter(predictions)
 
     y_preds = np.array([round(x) for x in results.mean().values])
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))
 
-    return y_preds, results, means, stds, iqr, accuracy, jitter
+    return y_preds, results, accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst
 
 
 def get_per_sample_accuracy(y_test, results):
