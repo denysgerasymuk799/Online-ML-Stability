@@ -9,7 +9,6 @@ from itertools import chain, combinations
 def TPR_diff(predicted, true, group_info, advantaged, disadvantaged):
     adv_tpr = np.mean(predicted[(true == 1) & (group_info == advantaged)])
     disadv_tpr = np.mean(predicted[(true == 1) & (group_info == disadvantaged)])
-    
     return adv_tpr, disadv_tpr, adv_tpr - disadv_tpr
 
 
