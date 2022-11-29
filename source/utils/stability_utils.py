@@ -74,34 +74,41 @@ def compute_conf_interval(labels):
     return sp.stats.norm.interval(alpha=0.95, loc=np.mean(labels), scale=sp.stats.sem(labels))
 
 
-def count_prediction_stats(y_test, predictions, predictions_proba):
+def compute_stability_metrics(results):
+    means_lst = results.mean().values
+    stds_lst = results.std().values
+    iqr_lst = sp.stats.iqr(results, axis=0)
+    conf_interval_df = pd.DataFrame(np.apply_along_axis(compute_conf_interval, 1, results.transpose().values),
+                                    columns=['lower_bound', 'upper_bound'])
+    entropy_lst = np.apply_along_axis(compute_entropy, 1, results.transpose().values)
+
+    return means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst
+
+
+def count_prediction_stats(y_test, uq_results):
     """
     Compute means, stds, iqr, accuracy, jitter and transform predictions to pd df
 
     :param y_test: true labels
     :param uq_results: predicted labels
     """
-    if isinstance(predictions, np.ndarray):
-        results = pd.DataFrame(predictions)
-        results_proba = pd.DataFrame(predictions_proba)
+    if isinstance(uq_results, np.ndarray):
+        results = pd.DataFrame(uq_results)
     else:
-        results = pd.DataFrame(predictions).transpose()
-        results_proba = pd.DataFrame(predictions_proba).transpose()
+        results = pd.DataFrame(uq_results).transpose()
 
     print('results.shape -- ', results.shape)
+    means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst = compute_stability_metrics(results)
 
-    means_lst = results_proba.mean().values
-    stds_lst = results_proba.std().values
-    iqr_lst = sp.stats.iqr(results_proba, axis=0)
-    conf_interval_df = pd.DataFrame(np.apply_along_axis(compute_conf_interval, 1, results_proba.transpose().values),
-                                    columns=['lower_bound', 'upper_bound'])
-    entropy_lst = np.apply_along_axis(compute_entropy, 1, results_proba.transpose().values)
-    jitter_lst = compute_jitter(predictions)
+    # Convert predict proba results of each model to correspondent labels
+    uq_labels = results.applymap(lambda x: int(x<0.5))
+    jitter_lst = compute_jitter(uq_labels.transpose().values)
 
-    y_preds = np.array([round(x) for x in results.mean().values])
+    y_preds = np.array([int(x<0.5) for x in results.mean().values])
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))
 
-    return y_preds, results, accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst
+    return y_preds, results, uq_labels, accuracy,\
+           means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst
 
 
 def get_per_sample_accuracy(y_test, results):
@@ -116,7 +123,7 @@ def get_per_sample_accuracy(y_test, results):
     per_sample_accuracy = []
     acc = None
     for sample in range(len(y_test)):
-        per_sample_predictions[sample] =  [round(x) for x in results[sample].values]
+        per_sample_predictions[sample] =  [int(x<0.5) for x in results[sample].values]
         label_stability.append(compute_label_stability(per_sample_predictions[sample]))
 
         if y_test[sample] == 1:

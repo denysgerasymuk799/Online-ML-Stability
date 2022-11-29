@@ -8,7 +8,7 @@ from copy import deepcopy
 from source.utils.simple_utils import get_logger
 from source.utils.EDA_utils import plot_generic
 from source.utils.stability_utils import generate_bootstrap
-from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy
+from source.utils.stability_utils import count_prediction_stats, get_per_sample_accuracy, compute_stability_metrics
 
 
 class BaseStabilityAnalyzer:
@@ -62,12 +62,15 @@ class BaseStabilityAnalyzer:
         """
         # Quantify uncertainty for the base model
         boostrap_size = int(self.bootstrap_fraction * self.train_pd_dataset.shape[0])
-        models_predictions, models_predictions_proba = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
+        models_predictions = self.UQ_by_boostrap(boostrap_size, with_replacement=True)
 
-        # Count metrics
-        y_preds, results, accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst = \
-            count_prediction_stats(self.test_y_true, models_predictions, models_predictions_proba)
+        # Count metrics based on prediction proba results
+        y_preds, results, uq_labels, accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst = \
+            count_prediction_stats(self.test_y_true, models_predictions)
         per_sample_accuracy, label_stability = get_per_sample_accuracy(self.test_y_true, results)
+        # Count metrics based on label predictions to visualize plots
+        labels_means_lst, labels_stds_lst, labels_iqr_lst, labels_conf_interval_df, labels_entropy_lst = \
+            compute_stability_metrics(uq_labels)
         self.__update_metrics(accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst,
                               per_sample_accuracy, label_stability)
 
@@ -75,11 +78,11 @@ class BaseStabilityAnalyzer:
 
         # Display plots if needed
         if make_plots:
-            plot_generic(means_lst, stds_lst, "Mean of probability", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Probability mean vs Standard deviation")
-            plot_generic(stds_lst, label_stability, "Standard deviation", "Label stability", x_lim=0.5, y_lim=1.01, plot_title="Standard deviation vs Label stability")
-            plot_generic(means_lst, label_stability, "Mean", "Label stability", x_lim=1.01, y_lim=1.01, plot_title="Mean vs Label stability")
-            plot_generic(per_sample_accuracy, stds_lst, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
-            plot_generic(per_sample_accuracy, iqr_lst, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
+            plot_generic(labels_means_lst, labels_stds_lst, "Mean of probability", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Probability mean vs Standard deviation")
+            plot_generic(labels_stds_lst, label_stability, "Standard deviation", "Label stability", x_lim=0.5, y_lim=1.01, plot_title="Standard deviation vs Label stability")
+            plot_generic(labels_means_lst, label_stability, "Mean", "Label stability", x_lim=1.01, y_lim=1.01, plot_title="Mean vs Label stability")
+            plot_generic(per_sample_accuracy, labels_stds_lst, "Accuracy", "Standard deviation", x_lim=1.01, y_lim=0.5, plot_title="Accuracy vs Standard deviation")
+            plot_generic(per_sample_accuracy, labels_iqr_lst, "Accuracy", "Inter quantile range", x_lim=1.01, y_lim=1.01, plot_title="Accuracy vs Inter quantile range")
 
         if save_results:
             self.save_metrics_to_file()
@@ -91,17 +94,16 @@ class BaseStabilityAnalyzer:
         Quantifying uncertainty of the base model by constructing an ensemble from bootstrapped samples
         """
         models_predictions = {idx: [] for idx in range(self.n_estimators)}
-        models_predictions_proba = {idx: [] for idx in range(self.n_estimators)}
+        # models_predictions_proba = {idx: [] for idx in range(self.n_estimators)}
         for idx in range(self.n_estimators):
             self.__logger.info(f'Start testing of classifier {idx + 1} / {self.n_estimators}')
             classifier = self.models_lst[idx]
             df_sample = generate_bootstrap(self.train_pd_dataset, boostrap_size, with_replacement)
             classifier = self._fit_model(classifier, df_sample)
-            models_predictions[idx] = self._batch_predict(classifier, self.test_dataset)
-            models_predictions_proba[idx] = self._batch_predict_proba(classifier, self.test_dataset)
+            models_predictions[idx] = self._batch_predict_proba(classifier, self.test_dataset)
             self.__logger.info(f'Classifier {idx + 1} / {self.n_estimators} was tested')
 
-        return models_predictions, models_predictions_proba
+        return models_predictions
 
     def _fit_model(self, classifier, train_df):
         pass

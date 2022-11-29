@@ -1,2 +1,2 @@
 Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Entropy,Jitter,Per_Sample_Accuracy,Label_Stability
-folktables_LA,HoeffdingTreeClassifier,200,0.805,0.5838,0.0525,0.029,4.1131,0.491,0.7998,0.9491
+folktables_LA,HoeffdingTreeClassifier,30,0.8047,0.5852,0.0527,0.0302,2.7534,0.5077,0.7993,0.9503

@@ -64,7 +64,7 @@ def load_groups_of_interest(group_info, X_test_df):
         res['disadvantaged'] = group_info[group_type]['disadvantaged']
 
         test_groups[group_type] = res
-     
+
     # Intersectional groups
     all_groups = generate_powerset(group_info.keys())
     intersectional_groups = [x for x in list(all_groups) if len(x)==2]
