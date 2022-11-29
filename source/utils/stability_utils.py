@@ -28,8 +28,8 @@ def compute_churn(predicted_labels_1, predicted_labels_2):
     """
     Pairwise stability metric for two model predictions
     """
-    return sum(int(predicted_labels_1[i] != predicted_labels_2[i])
-               for i in range(len(predicted_labels_1))) / len(predicted_labels_1)
+    return np.sum([int(predicted_labels_1[i] != predicted_labels_2[i])
+                   for i in range(len(predicted_labels_1))]) / len(predicted_labels_1)
 
 
 def compute_jitter(models_prediction_labels):
@@ -80,9 +80,8 @@ def compute_stability_metrics(results):
     iqr_lst = sp.stats.iqr(results, axis=0)
     conf_interval_df = pd.DataFrame(np.apply_along_axis(compute_conf_interval, 1, results.transpose().values),
                                     columns=['lower_bound', 'upper_bound'])
-    entropy_lst = np.apply_along_axis(compute_entropy, 1, results.transpose().values)
 
-    return means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst
+    return means_lst, stds_lst, iqr_lst, conf_interval_df
 
 
 def count_prediction_stats(y_test, uq_results):
@@ -98,11 +97,13 @@ def count_prediction_stats(y_test, uq_results):
         results = pd.DataFrame(uq_results).transpose()
 
     print('results.shape -- ', results.shape)
-    means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst = compute_stability_metrics(results)
+    means_lst, stds_lst, iqr_lst, conf_interval_df = compute_stability_metrics(results)
 
     # Convert predict proba results of each model to correspondent labels
     uq_labels = results.applymap(lambda x: int(x<0.5))
-    jitter_lst = compute_jitter(uq_labels.transpose().values)
+    print('uq_labels.shape -- ', uq_labels.shape)
+    entropy_lst = np.apply_along_axis(compute_entropy, 1, uq_labels.transpose().values)
+    jitter_lst = compute_jitter(uq_labels.values)
 
     y_preds = np.array([int(x<0.5) for x in results.mean().values])
     accuracy = np.mean(np.array([y_preds[i] == int(y_test[i]) for i in range(len(y_test))]))

@@ -68,9 +68,12 @@ class BaseStabilityAnalyzer:
         y_preds, results, uq_labels, accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst = \
             count_prediction_stats(self.test_y_true, models_predictions)
         per_sample_accuracy, label_stability = get_per_sample_accuracy(self.test_y_true, results)
+        self.__logger.info(f'Successfully computed predict proba metrics')
         # Count metrics based on label predictions to visualize plots
-        labels_means_lst, labels_stds_lst, labels_iqr_lst, labels_conf_interval_df, labels_entropy_lst = \
+        labels_means_lst, labels_stds_lst, labels_iqr_lst, labels_conf_interval_df = \
             compute_stability_metrics(uq_labels)
+        self.__logger.info(f'Successfully computed predict labels metrics')
+
         self.__update_metrics(accuracy, means_lst, stds_lst, iqr_lst, conf_interval_df, entropy_lst, jitter_lst,
                               per_sample_accuracy, label_stability)
 

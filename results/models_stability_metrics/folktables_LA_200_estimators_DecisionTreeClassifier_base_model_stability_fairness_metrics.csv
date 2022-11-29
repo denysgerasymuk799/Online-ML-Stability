@@ -1,2 +1,2 @@
 Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Entropy,Jitter,Per_Sample_Accuracy,Label_Stability,Accuracy_Race,Accuracy_Sex,Accuracy_Race_Sex,Disparate_Impact_Race,Disparate_Impact_Sex,Disparate_Impact_Race_Sex,EO_Race,EO_Sex,EO_Race_Sex,SPD_Race,SPD_Sex,SPD_Race_Sex
-folktables_LA,DecisionTreeClassifier,200,0.816,0.584,0.079,0.091,3.8969,0.4972,0.8067,0.9028,0.0025,0.0474,0.045,0.8843,1.0436,0.9602,-0.0048,0.0144,0.0053,-0.1261,-0.111,-0.1865
+folktables_LA,DecisionTreeClassifier,200,0.8159,0.5844,0.0792,0.0914,0.1175,0.0718,0.8067,0.9008,0.0028,0.0499,0.0478,0.8827,1.0485,0.9633,-0.003,0.015,0.0074,-0.1235,-0.116,-0.1896

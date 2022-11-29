@@ -1,2 +1,2 @@
-General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter
-0.8074,0.4705,0.0711,0.0163,0.7995,0.949,0.0423
+Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Entropy,Jitter,Per_Sample_Accuracy,Label_Stability
+folktables_LA,HoeffdingTreeClassifier,100,0.8059,0.5849,0.0538,0.0336,0.0,0.0447,0.799,0.9451
