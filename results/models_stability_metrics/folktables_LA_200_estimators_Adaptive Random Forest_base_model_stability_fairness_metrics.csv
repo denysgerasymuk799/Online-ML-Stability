@@ -1,0 +1,2 @@
+Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Entropy,Jitter,Per_Sample_Accuracy,Label_Stability,Accuracy_Race,Accuracy_Sex,Accuracy_Race_Sex,Disparate_Impact_Race,Disparate_Impact_Sex,Disparate_Impact_Race_Sex,EO_Race,EO_Sex,EO_Race_Sex,SPD_Race,SPD_Sex,SPD_Race_Sex
+folktables_LA,Adaptive Random Forest,200,0.813,0.58,0.0413,0.052,0.0,0.0503,0.8094,0.9298,0.0005,0.0546,0.0517,0.8462,1.0184,0.9137,0.0219,0.0396,0.0458,-0.0696,-0.0786,-0.1234
