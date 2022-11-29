@@ -1,2 +1,2 @@
-Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Per_Sample_Accuracy,Label_Stability,Jitter,Accuracy_Race,Accuracy_Sex,Accuracy_Race_Sex,Disparate_Impact_Race,Disparate_Impact_Sex,Disparate_Impact_Race_Sex,EO_Race,EO_Sex,EO_Race_Sex,SPD_Race,SPD_Sex,SPD_Race_Sex
-folktables_LA,HoeffdingTreeClassifier,200,0.8069,0.4698,0.0676,0.0192,0.8004,0.9514,0.0395,-0.0021,0.0574,0.0538,0.8605,1.0898,0.9799,0.0073,0.0022,0.007,-0.0939,-0.1608,-0.2098
+Dataset_Name,Base_Model_Name,N_Estimators,General_Ensemble_Accuracy,Mean,Std,IQR,Entropy,Jitter,Per_Sample_Accuracy,Label_Stability,Accuracy_Race,Accuracy_Sex,Accuracy_Race_Sex,Disparate_Impact_Race,Disparate_Impact_Sex,Disparate_Impact_Race_Sex,EO_Race,EO_Sex,EO_Race_Sex,SPD_Race,SPD_Sex,SPD_Race_Sex
+folktables_LA,HoeffdingTreeClassifier_Proba,200,0.8039,0.5842,0.0502,0.0302,0.0,0.0404,0.8001,0.9506,-0.0042,0.0554,0.0511,0.8592,1.0856,0.9744,0.0065,0.0029,0.0089,-0.0914,-0.155,-0.2014
