@@ -175,6 +175,7 @@ def display_uncertainty_plot(results, x_metric, y_metric, x_lim):
         a = ax.scatter(results[technique][x_metric], results[technique][y_metric], marker=markers[idx], s=100)
         shapes.append(a)
 
+    plt.axhline(y=0.0, color='r', linestyle='-')
     plt.xlabel(x_metric)
     plt.ylabel(y_metric)
     plt.xlim(0, x_lim)
